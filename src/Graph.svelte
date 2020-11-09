@@ -6,8 +6,19 @@
   export let data;
   const carData = data.data;
 
-  console.log(data);
+  let x,
+    y,
+    bars = [];
 
+  function handleClick(event, d) {
+    const target = d3.select(event.currentTarget);
+    const fill = target.attr("fill");
+
+    d3.select(event.currentTarget).attr(
+      "fill",
+      fill === "red" ? "black" : "red"
+    );
+  }
   // set the ranges
   const width = 960;
   const height = 480;
@@ -15,78 +26,52 @@
 
   // Wait for the element svg to mount so that we can call it with d3.
   onMount(() => {
-    const svg = d3
-      .select("#graph")
-      .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    var x = d3.scaleBand().range([0, width]).padding(0.01);
-    var y = d3.scaleLinear().range([height, 0]);
+    const axis = d3.select("svg g");
 
     const name = "kenteken";
     const value = "aantal_cilinders";
+
+    bars = carData.map((d) => {
+      return {
+        ...d,
+        name: d[name],
+        value: Number(d[value]) || 0,
+      };
+    });
+
+    // X & Y axis are really hard to make with HTML elements, and D3 is very good at making this. So let's not change anything about this :).
+    x = d3.scaleBand().range([0, width]).padding(0.01);
+    y = d3.scaleLinear().range([height, 0]);
 
     // Scale the range of the data in the domains
     x.domain(carData.map((d) => d[name]));
     y.domain([0, d3.max(carData, (d) => d[value])]);
 
-    // append the rectangles for the bar chart
-    svg
-      .selectAll(".bar")
-      .data(() =>
-        carData.map((d) => {
-          const obj = {
-            name: d[name],
-            value: Number(d[value]) || 0,
-          };
-          console.log(obj);
-          return obj;
-        })
-      )
-      .enter()
-      .append("rect")
-      .attr("class", "bar")
-      .attr("x", (d) => x(d.name))
-      .attr("width", x.bandwidth())
-      .attr("y", (d) => y(d.value))
-      .attr("height", (d) => height - y(d.value))
-      .on("click", handleClick);
-
     // add the x Axis
-    svg
+    axis
       .append("g")
       .attr("transform", "translate(0," + height + ")")
       .call(d3.axisBottom(x));
 
     // add the y Axis
-    svg.append("g").call(d3.axisLeft(y));
-
-    function handleClick(event, d) {
-      const target = d3.select(event.currentTarget);
-      const fill = target.attr("fill");
-
-      d3.select(event.currentTarget).attr(
-        "fill",
-        fill === "red" ? "black" : "red"
-      );
-    }
+    axis.append("g").call(d3.axisLeft(y));
   });
-
-  //
-  //
-  // TESTING
-
-  let bars;
-  $: {
-    bars = carData.map((car) => {
-      return {
-        color: getHexColor(car.eerste_kleur || "N.v.t."),
-      };
-    });
-  }
 </script>
 
-<div id="graph" />
+<svg
+  width={width + margin.left + margin.right}
+  height={height + margin.top + margin.bottom}>
+  <g transform="translate({margin.left},{margin.top})">
+    {#each bars as { name, value }}
+      <rect
+        class="bar"
+        width={x.bandwidth()}
+        height={height - y(value)}
+        x={x(name)}
+        y={y(value)}
+        on:click={handleClick} />
+    {:else}
+      <p>creating bars..</p>
+    {/each}
+  </g>
+</svg>
