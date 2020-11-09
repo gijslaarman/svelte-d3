@@ -3,7 +3,7 @@
   import mockUpData from "../scripts/getMockUpData";
   import Graph from "./Graph.svelte";
 
-  const data = mockUpData();
+  const data = fetchData();
 </script>
 
 <main>
